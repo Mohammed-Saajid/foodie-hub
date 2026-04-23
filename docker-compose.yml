@@ -31,6 +31,7 @@ services:
       - foodie_net
 
   app:
+    image: foodie-hub-app:local-build
     build:
       context: .
       dockerfile: Dockerfile

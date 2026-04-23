@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   publish-image:
-    name: Build and Publish Container
+    name: Build, Verify, and Publish Container
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -48,17 +48,65 @@ jobs:
         run: docker compose --env-file .env.docker.example config
 
       - name: Build app image via compose
-        run: docker compose --env-file .env.docker.example build app
+        id: build
+        shell: bash
+        run: |
+          set -euo pipefail
+          
+          # 1. Build the image
+          docker compose --env-file .env.docker.example build app
+          
+          # 2. Extract the image ID
+          image_id="$(docker inspect -f '{{.Id}}' foodie-hub-app:local-build)"
+          
+          if [[ -z "${image_id}" ]]; then
+            echo "Error: Could not resolve image ID for foodie-hub-app:local-build" >&2
+            exit 1
+          fi
+          
+          echo "image_id=${image_id}" >> "${GITHUB_OUTPUT}"
+
+      - name: Verify Application Starts (Smoke Test & Health Check)
+        shell: bash
+        run: |
+                set -euo pipefail
+                
+                echo "Starting the application..."
+                docker compose --env-file .env.docker.example up -d app
+                
+                echo "Polling http://localhost:8001/health for up to 30 seconds..."
+                
+                timeout=30
+                elapsed=0
+                interval=2
+                
+                # Loop until curl succeeds or timeout is reached
+                while ! curl --fail --silent http://localhost:8001/health > /dev/null; do
+                  if [[ "${elapsed}" -ge "${timeout}" ]]; then
+                    echo "Error: Health check failed or timed out after ${timeout} seconds." >&2
+                    echo "--- CONTAINER LOGS ---"
+                    docker compose logs app
+                    docker compose down
+                    exit 1
+                  fi
+                  sleep "${interval}"
+                  elapsed=$((elapsed + interval))
+                done
+                
+                echo "Health check passed. Container is fully operational."
+                
+                # Tear down the test environment before proceeding to push
+                docker compose down
 
       - name: Tag and push compose image to GHCR
         shell: bash
         run: |
           set -euo pipefail
 
-          image_id="$(docker compose --env-file .env.docker.example images -q app)"
+          image_id="${{ steps.build.outputs.image_id }}"
 
           if [[ -z "${image_id}" ]]; then
-            echo "Could not resolve compose-built app image ID"
+            echo "Error: image_id variable is empty during push phase." >&2
             exit 1
           fi
 
