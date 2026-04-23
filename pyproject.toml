@@ -1,0 +1,315 @@
+[project]
+name = "foodie-hub"
+version = "0.1.0"
+description = "Professional backend for multi-role food ordering platform"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.116.0",
+  "uvicorn[standard]>=0.35.0",
+  "sqlalchemy[asyncio]>=2.0.43",
+  "asyncpg>=0.30.0",
+  "aiosqlite>=0.21.0",
+  "alembic>=1.16.5",
+  "pydantic>=2.11.7",
+  "pydantic-settings>=2.10.1",
+  "passlib>=1.7.4",
+  "python-jose[cryptography]>=3.5.0",
+  "python-multipart>=0.0.20",
+  "email-validator>=2.2.0",
+  "aiosmtplib>=5.1.0",
+  "better-profanity>=0.7.0",
+  "phonenumbers>=9.0.27",
+  "bandit[toml]>=1.9.4",
+  "redis>=7.4.0",
+  "ddtrace>=4.6.7",
+  "python-json-logger>=4.1.0",
+  "sse-starlette>=3.3.4",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.4.2",
+  "pytest-asyncio>=1.2.0",
+  "httpx>=0.28.1",
+  "pytest-cov>=7.1.0",
+  "mypy>=1.20.1",
+  "ruff>=0.15.9",
+  "pre-commit>=4.5.1",
+  "pytest-env>=1.6.0",
+]
+
+[project.scripts]
+foodie-seed = "app.utils.seed:main"
+
+[tool.pytest.ini_options]
+# Minimum Pytest version required
+minversion = "7.0"
+
+pythonpath = ["."]
+# Directories to search for tests when typing `pytest`
+testpaths = ["tests"]
+
+# Default command-line arguments. 
+# -v: verbose output
+# --strict-markers: fail if you use an unregistered marker (prevents typos like @pytest.mark.integ)
+# --strict-config: fail if there are errors in this config block
+# -p no:warnings: suppress third-party deprecation warnings polluting your test output
+addopts = """
+    -v
+    --strict-markers
+    --strict-config
+    -p no:warnings
+    --cov=core
+    --cov=api
+    --cov=services
+    --cov=repository
+    --cov-report=term-missing
+    --cov-report=xml
+    --cov-fail-under=80
+"""
+
+# Crucial for FastAPI: Automatically treat all async functions as async tests 
+# Requires `pip install pytest-asyncio`
+asyncio_mode = "auto"
+
+# Register custom markers to categorize tests
+markers = [
+    "unit: Pure, fast, isolated logic tests without database/network access",
+    "integration: Tests that hit a real database or external service",
+    "slow: Tests that take longer than 1 second to run",
+]
+
+# Set environment variables for tests (Requires `pip install pytest-env`)
+env = [
+    "APP_ENV=testing",
+    "LOG_LEVEL=DEBUG",
+    # Force the database URL to a test database so you don't drop production tables
+    "DATABASE_URL=sqlite+aiosqlite:///:memory:", 
+]
+
+[tool.coverage.run]
+# Enable branch coverage (checks if both True and False paths of 'if' statements are tested)
+branch = true
+
+# Do not measure coverage on tests themselves, database migrations, or scripts
+omit = [
+    "tests/*",
+    "alembic/*",
+    "scripts/*",
+    "main.py", # Exclude the entrypoint as it's hard to test cleanly without spinning up Uvicorn
+]
+
+[tool.coverage.report]
+# Lines to completely ignore when calculating the coverage percentage
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self\\.debug",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    # Ignore type checking blocks (Mypy handles this, no need to test it at runtime)
+    "if TYPE_CHECKING:",
+]
+
+[tool.bandit]
+# Target directories to scan (usually your core application folders)
+targets = ["core", "api", "services", "models", "repository", "main.py"]
+
+# Directories to explicitly exclude
+# We exclude tests here so Bandit doesn't flag hardcoded mock passwords or `assert` statements.
+exclude_dirs = [
+    "tests",
+    "alembic",
+    ".venv",
+    "venv",
+    "scripts",  # Development/deployment scripts often trigger false positives
+]
+
+# Specific Bandit rules to skip globally
+skips = [
+    "B104",  # hardcoded_bind_all: Flags binding to "0.0.0.0". 
+             # You must skip this because running Uvicorn in a Docker container 
+             # requires binding to 0.0.0.0 to expose the port.
+]
+
+# Require explicit `# nosec` syntax for inline ignores, with a reason provided.
+# e.g., `# nosec B105 - Mock password for testing`
+assert_used.skips = ['*_test.py', '*/test_*.py']
+
+[tool.ruff]
+# Set the minimum Python version supported by your project
+target-version = "py311"
+
+# Line length (88 is Black's default, but 100-120 is common in enterprise)
+line-length = 100
+
+# Exclude common directories that should not be linted
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+    "alembic",  # Often auto-generated, exclude if necessary
+]
+
+[tool.ruff.lint]
+# Enable specific rule sets
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes (unused imports, variables, etc.)
+    "I",      # isort (import sorting)
+    "B",      # flake8-bugbear (common bugs and design flaws)
+    "C4",     # flake8-comprehensions (better list/dict comprehensions)
+    "UP",     # pyupgrade (enforce modern Python syntax)
+    "ARG",    # flake8-unused-arguments (find unused function arguments)
+    "SIM",    # flake8-simplify (suggest simpler code equivalents)
+    "RUF",    # Ruff-specific rules
+    "PT",     # flake8-pytest-style (enforce testing best practices)
+    "RET",    # flake8-return (check return values)
+    "T20",    # flake8-print (prevent print statements in production)
+]
+
+# Ignore specific rules that conflict with your framework or preferences
+ignore = [
+    "B008",   # Do not perform function calls in argument defaults. 
+              # Ignored because FastAPI heavily relies on Depends() and Query() in defaults.
+    "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`.
+              # Sometimes conflicts with Pydantic/SQLAlchemy models.
+]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.isort]
+# Ensure imports are grouped and sorted correctly
+known-first-party = ["core", "api", "services", "models", "repository"]
+combine-as-imports = true
+lines-after-imports = 2
+
+[tool.ruff.lint.flake8-pytest-style]
+# Enforce standard pytest fixture configurations
+fixture-parentheses = false
+mark-parentheses = false
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
+# Enable auto-formatting of code examples in docstrings. Markdown,
+# reStructuredText code/literal blocks and doctests are all supported.
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+
+[tool.ruff.lint.per-file-ignores]
+# Apply these exceptions only to files in the tests directory
+"tests/**/*.py" = [
+    "PT011",  # Allow the use of `pytest.raises(Exception)` without assigning it to a variable. (Common pattern in tests).
+    "S101",    # Allow the use of `assert`. (Bandit strictly forbids `assert` in prod, but pytest requires it).
+    "S105",    # Allow hardcoded passwords. (Common when mocking user payloads or database URIs in tests).
+    "S106",    # Allow hardcoded passwords in function calls.
+    "ARG001",  # Allow unused function arguments. (Pytest fixtures often need to be requested in the parameter list even if not explicitly referenced in the test body).
+    "PLR2004", # Allow magic values in comparisons. (e.g., `assert response.status_code == 200` is fine in tests, but flagged in prod).
+    "T201",    # Allow print statements. (Useful for debugging failing tests in CI logs).
+]
+
+[tool.mypy]
+# Specify the target platform details
+python_version = "3.11"
+platform = "linux"
+
+# Flips on all strictness flags simultaneously. 
+# This is non-negotiable for new production code.
+strict = true
+
+
+# Core strictness flags (enabled by `strict = true` above, 
+# listed here for explicit visibility or tuning)
+
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+warn_unreachable = true
+
+# Provide detailed error messages
+show_error_codes = true
+show_column_numbers = true
+show_error_context = true
+
+# Directories to exclude from type checking
+exclude = [
+    "^\\.venv/",
+    "^venv/",
+    "^alembic/",     # Auto-generated database migrations
+    "^\\.mypy_cache/",
+]
+
+
+# Plugins for Frameworks
+
+# FastAPI relies heavily on Pydantic. Mypy cannot understand 
+# Pydantic's dynamic model generation without this plugin.
+# If you use SQLAlchemy 2.0+, include its plugin as well.
+plugins = [
+    "pydantic.mypy",
+    # "sqlalchemy.ext.mypy.plugin",
+]
+
+
+# Third-Party Overrides
+
+# Many older or highly dynamic Python libraries do not ship with type hints (stubs).
+# You must tell Mypy to ignore missing imports for these specific modules,
+# otherwise your CI will fail on the import statements.
+[[tool.mypy.overrides]]
+module = [
+    "ddtrace.*",
+    # Add other untyped legacy/C-extension libraries here
+]
+ignore_missing_imports = true
+
+# Plugin Configurations
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+warn_untyped_fields = true

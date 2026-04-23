@@ -1,0 +1,70 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+concurrency:
+  group: cd-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish-image:
+    name: Build and Publish Container
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Validate compose configuration
+        run: docker compose --env-file .env.docker.example config
+
+      - name: Build app image via compose
+        run: docker compose --env-file .env.docker.example build app
+
+      - name: Tag and push compose image to GHCR
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          image_id="$(docker compose --env-file .env.docker.example images -q app)"
+
+          if [[ -z "${image_id}" ]]; then
+            echo "Could not resolve compose-built app image ID"
+            exit 1
+          fi
+
+          while IFS= read -r tag; do
+            [[ -z "${tag}" ]] && continue
+            echo "Pushing ${tag}"
+            docker tag "${image_id}" "${tag}"
+            docker push "${tag}"
+          done <<< "${{ steps.meta.outputs.tags }}"

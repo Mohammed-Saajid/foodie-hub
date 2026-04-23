@@ -1,0 +1,45 @@
+repos:
+  # 1. Standard Git Hygiene Hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: detect-private-key
+      - id: check-merge-conflict
+
+  # 2. Ruff: Linter and Formatter (use project-managed version/config)
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff
+        entry: uv run ruff check --config pyproject.toml --fix
+        language: system
+        types: [python]
+      - id: ruff-format
+        name: ruff-format
+        entry: uv run ruff format --config pyproject.toml
+        language: system
+        types: [python]
+
+  # 3. Mypy: Static Type Checking (use project-managed version/config)
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: uv run mypy --config-file pyproject.toml
+        language: system
+        types: [python]
+
+  # 4. Bandit: Security Scanning (use project-managed version/config)
+  - repo: local
+    hooks:
+      - id: bandit
+        name: bandit
+        entry: uv run bandit -c pyproject.toml
+        language: system
+        types: [python]

@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  pull_request:
+    branches: ["**"]
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/**"
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  quality:
+    name: Lint and Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: latest
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Ruff check
+        run: uv run ruff check .
+
+      - name: Mypy check
+        run: uv run mypy app
+
+  tests:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: quality
+
+    env:
+      DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+      ALEMBIC_DATABASE_URL: "sqlite+aiosqlite:///./ci_test.db"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: latest
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run tests
+        run: uv run pytest -q
+
+      - name: Upload coverage XML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          if-no-files-found: ignore
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          fail_ci_if_error: true
+
+  compose-build:
+    name: Docker Compose Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [tests]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate compose configuration
+        run: docker compose --env-file .env.docker.example config
+
+      - name: Build app image via compose
+        run: docker compose --env-file .env.docker.example build app
