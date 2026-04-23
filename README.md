@@ -31,11 +31,11 @@ flowchart LR
 
 ## Technology Stack
 
-**Application Core:** Python 3.11+, FastAPI, Pydantic v2
-**Data Layer:** PostgreSQL, SQLAlchemy (async), Alembic
-**Caching & Messaging:** Redis, sse-starlette
-**Quality Assurance:** Pytest, pytest-asyncio, HTTPX, k6 (Load Testing)
-**DevOps & Tooling:** Docker, GitHub Actions, Ruff, Mypy, uv (Dependency Management)
+- **Application Core:** Python 3.11+, FastAPI, Pydantic v2
+- **Data Layer:** PostgreSQL, SQLAlchemy (async), Alembic
+- **Caching & Messaging:** Redis, sse-starlette
+- **Quality Assurance:** Pytest, pytest-asyncio, HTTPX, k6 (Load Testing)
+- **DevOps & Tooling:** Docker, GitHub Actions, Ruff, Mypy, uv (Dependency Management)
 
 ## Project Structure
 
