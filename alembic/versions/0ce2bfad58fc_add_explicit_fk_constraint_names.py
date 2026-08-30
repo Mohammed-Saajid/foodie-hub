@@ -4,18 +4,15 @@ Revision ID: 0ce2bfad58fc
 Revises: 4b74212dd106
 Create Date: 2026-03-31 12:08:53.222249
 """
-from typing import Sequence, Union
 
-from alembic import op
-import sqlalchemy as sa
-
+from collections.abc import Sequence
 
 
 # revision identifiers, used by Alembic.
-revision: str = '0ce2bfad58fc'
-down_revision: Union[str, Sequence[str], None] = '4b74212dd106'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+revision: str = "0ce2bfad58fc"
+down_revision: str | Sequence[str] | None = "4b74212dd106"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

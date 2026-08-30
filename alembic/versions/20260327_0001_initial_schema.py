@@ -1,23 +1,26 @@
 """initial schema
 
 Revision ID: 20260327_0001
-Revises: 
+Revises:
 Create Date: 2026-03-27
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
+
+import sqlalchemy as sa
 
 from alembic import op
-import sqlalchemy as sa
 
 
 revision: str = "20260327_0001"
-down_revision: Union[str, Sequence[str], None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
-user_role_enum = sa.Enum("CONSUMER", "DELIVERY", "HOTEL_MANAGER", "ADMIN", name="userrole", native_enum=False)
+user_role_enum = sa.Enum(
+    "CONSUMER", "DELIVERY", "HOTEL_MANAGER", "ADMIN", name="userrole", native_enum=False
+)
 order_status_enum = sa.Enum(
     "CREATED",
     "BIDDING",
@@ -30,7 +33,9 @@ order_status_enum = sa.Enum(
     native_enum=False,
 )
 bid_status_enum = sa.Enum("PENDING", "ACCEPTED", "REJECTED", name="bidstatus", native_enum=False)
-report_status_enum = sa.Enum("OPEN", "REVIEWED", "DISMISSED", name="reportstatus", native_enum=False)
+report_status_enum = sa.Enum(
+    "OPEN", "REVIEWED", "DISMISSED", name="reportstatus", native_enum=False
+)
 
 
 def upgrade() -> None:
@@ -50,8 +55,12 @@ def upgrade() -> None:
         sa.Column("terms_accepted", sa.Boolean(), nullable=False, server_default=sa.false()),
         sa.Column("terms_accepted_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("terms_version_accepted", sa.String(length=20), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
         sa.UniqueConstraint("username"),
         sa.UniqueConstraint("email"),
     )
@@ -67,7 +76,9 @@ def upgrade() -> None:
         sa.Column("token_hash", sa.String(length=255), nullable=False),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("is_used", sa.Boolean(), nullable=False, server_default=sa.false()),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.UniqueConstraint("token_hash"),
     )
@@ -80,7 +91,9 @@ def upgrade() -> None:
         sa.Column("manager_id", sa.Integer(), nullable=False),
         sa.Column("name", sa.String(length=120), nullable=False),
         sa.Column("is_open", sa.Boolean(), nullable=False, server_default=sa.false()),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
         sa.ForeignKeyConstraint(["manager_id"], ["users.id"], ondelete="CASCADE"),
     )
     op.create_index("ix_hotels_manager_id", "hotels", ["manager_id"])
@@ -93,7 +106,9 @@ def upgrade() -> None:
         sa.Column("description", sa.Text(), nullable=False, server_default=""),
         sa.Column("price", sa.Float(), nullable=False),
         sa.Column("is_available", sa.Boolean(), nullable=False, server_default=sa.true()),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
         sa.ForeignKeyConstraint(["hotel_id"], ["hotels.id"], ondelete="CASCADE"),
     )
     op.create_index("ix_menu_items_hotel_id", "menu_items", ["hotel_id"])
@@ -108,8 +123,12 @@ def upgrade() -> None:
         sa.Column("delivery_user_id", sa.Integer(), nullable=True),
         sa.Column("total_amount", sa.Float(), nullable=False, server_default="0"),
         sa.Column("delivery_otp", sa.String(length=12), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
         sa.ForeignKeyConstraint(["consumer_id"], ["users.id"]),
         sa.ForeignKeyConstraint(["hotel_id"], ["hotels.id"]),
         sa.ForeignKeyConstraint(["delivery_user_id"], ["users.id"]),
@@ -127,7 +146,9 @@ def upgrade() -> None:
         sa.Column("amount", sa.Float(), nullable=False),
         sa.Column("upi_screenshot_url", sa.String(length=500), nullable=False),
         sa.Column("status", bid_status_enum, nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
         sa.ForeignKeyConstraint(["order_id"], ["orders.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["delivery_user_id"], ["users.id"]),
     )
@@ -152,7 +173,9 @@ def upgrade() -> None:
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("content", sa.Text(), nullable=False),
         sa.Column("channel_date", sa.Date(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
     )
     op.create_index("ix_discussion_messages_user_id", "discussion_messages", ["user_id"])
@@ -165,7 +188,9 @@ def upgrade() -> None:
         sa.Column("message_id", sa.Integer(), nullable=False),
         sa.Column("reason", sa.String(length=500), nullable=False),
         sa.Column("status", report_status_enum, nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
         sa.ForeignKeyConstraint(["reporter_id"], ["users.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["message_id"], ["discussion_messages.id"], ondelete="CASCADE"),
     )

@@ -31,15 +31,17 @@ repos:
     hooks:
       - id: mypy
         name: mypy
-        entry: uv run mypy --config-file pyproject.toml
+        entry: uv run mypy --config-file pyproject.toml app
         language: system
         types: [python]
+        pass_filenames: false
 
   # 4. Bandit: Security Scanning (use project-managed version/config)
   - repo: local
     hooks:
       - id: bandit
         name: bandit
-        entry: uv run bandit -c pyproject.toml
+        entry: uv run bandit -c pyproject.toml app
         language: system
         types: [python]
+        pass_filenames: false

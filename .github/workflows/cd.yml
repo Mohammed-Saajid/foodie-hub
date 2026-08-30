@@ -52,34 +52,34 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          
+
           # 1. Build the image
           docker compose --env-file .env.docker.example build app
-          
+
           # 2. Extract the image ID
           image_id="$(docker inspect -f '{{.Id}}' foodie-hub-app:local-build)"
-          
+
           if [[ -z "${image_id}" ]]; then
             echo "Error: Could not resolve image ID for foodie-hub-app:local-build" >&2
             exit 1
           fi
-          
+
           echo "image_id=${image_id}" >> "${GITHUB_OUTPUT}"
 
       - name: Verify Application Starts (Smoke Test & Health Check)
         shell: bash
         run: |
                 set -euo pipefail
-                
+
                 echo "Starting the application..."
                 docker compose --env-file .env.docker.example up -d app
-                
+
                 echo "Polling http://localhost:8001/health for up to 30 seconds..."
-                
+
                 timeout=30
                 elapsed=0
                 interval=2
-                
+
                 # Loop until curl succeeds or timeout is reached
                 while ! curl --fail --silent http://localhost:8001/health > /dev/null; do
                   if [[ "${elapsed}" -ge "${timeout}" ]]; then
@@ -92,9 +92,9 @@ jobs:
                   sleep "${interval}"
                   elapsed=$((elapsed + interval))
                 done
-                
+
                 echo "Health check passed. Container is fully operational."
-                
+
                 # Tear down the test environment before proceeding to push
                 docker compose down
 

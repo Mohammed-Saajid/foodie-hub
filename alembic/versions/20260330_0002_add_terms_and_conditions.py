@@ -6,9 +6,11 @@ Create Date: 2026-03-30 00:00:00.000000
 
 """
 
-from alembic import op
+from datetime import UTC, datetime
+
 import sqlalchemy as sa
-from datetime import datetime, UTC
+
+from alembic import op
 
 
 # revision identifiers, used by Alembic.
@@ -23,7 +25,9 @@ def upgrade() -> None:
     op.create_table(
         "terms_and_conditions",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("version", sa.Integer(), sa.Identity(always=False, start=1, increment=1), nullable=False),
+        sa.Column(
+            "version", sa.Integer(), sa.Identity(always=False, start=1, increment=1), nullable=False
+        ),
         sa.Column("content", sa.Text(), nullable=False),
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default="true"),
         sa.Column(

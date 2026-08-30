@@ -50,7 +50,7 @@ pythonpath = ["."]
 # Directories to search for tests when typing `pytest`
 testpaths = ["tests"]
 
-# Default command-line arguments. 
+# Default command-line arguments.
 # -v: verbose output
 # --strict-markers: fail if you use an unregistered marker (prevents typos like @pytest.mark.integ)
 # --strict-config: fail if there are errors in this config block
@@ -69,7 +69,7 @@ addopts = """
     --cov-fail-under=80
 """
 
-# Crucial for FastAPI: Automatically treat all async functions as async tests 
+# Crucial for FastAPI: Automatically treat all async functions as async tests
 # Requires `pip install pytest-asyncio`
 asyncio_mode = "auto"
 
@@ -85,7 +85,7 @@ env = [
     "APP_ENV=testing",
     "LOG_LEVEL=DEBUG",
     # Force the database URL to a test database so you don't drop production tables
-    "DATABASE_URL=sqlite+aiosqlite:///:memory:", 
+    "DATABASE_URL=sqlite+aiosqlite:///:memory:",
 ]
 
 [tool.coverage.run]
@@ -130,8 +130,8 @@ exclude_dirs = [
 
 # Specific Bandit rules to skip globally
 skips = [
-    "B104",  # hardcoded_bind_all: Flags binding to "0.0.0.0". 
-             # You must skip this because running Uvicorn in a Docker container 
+    "B104",  # hardcoded_bind_all: Flags binding to "0.0.0.0".
+             # You must skip this because running Uvicorn in a Docker container
              # requires binding to 0.0.0.0 to expose the port.
 ]
 
@@ -192,7 +192,7 @@ select = [
 
 # Ignore specific rules that conflict with your framework or preferences
 ignore = [
-    "B008",   # Do not perform function calls in argument defaults. 
+    "B008",   # Do not perform function calls in argument defaults.
               # Ignored because FastAPI heavily relies on Depends() and Query() in defaults.
     "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`.
               # Sometimes conflicts with Pydantic/SQLAlchemy models.
@@ -252,12 +252,12 @@ docstring-code-line-length = "dynamic"
 python_version = "3.11"
 platform = "linux"
 
-# Flips on all strictness flags simultaneously. 
+# Flips on all strictness flags simultaneously.
 # This is non-negotiable for new production code.
 strict = true
 
 
-# Core strictness flags (enabled by `strict = true` above, 
+# Core strictness flags (enabled by `strict = true` above,
 # listed here for explicit visibility or tuning)
 
 disallow_untyped_defs = true
@@ -286,7 +286,7 @@ exclude = [
 
 # Plugins for Frameworks
 
-# FastAPI relies heavily on Pydantic. Mypy cannot understand 
+# FastAPI relies heavily on Pydantic. Mypy cannot understand
 # Pydantic's dynamic model generation without this plugin.
 # If you use SQLAlchemy 2.0+, include its plugin as well.
 plugins = [
